@@ -19,11 +19,6 @@ function drawDz() {
   }, 0);
 }
 
-// Short text that changes whenever a design changes (used by sync).
-function designSignature(d) {
-  return [d.name, d.note, d.seg, d.cat, d.sub].join("~") + "~" + photoSignature(d);
-}
-
 // The selected segment, category and sub-category in the Designs tab.
 function selectedDesignNode() {
   var sg = S.dsg.find(function(x) {

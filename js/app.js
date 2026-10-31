@@ -6,9 +6,9 @@ byId("shop").onchange = function() {
   save();
 };
 
-// Open Designs (1) or Memo / Bill (2) from the home screen.
+// Open Designs (1), Memo / Bill (2) or Backup / Restore (3) from the home screen.
 function openSection(n) {
-  mode = n == 1 ? "design" : "memo";
+  mode = n == 1 ? "design" : n == 2 ? "memo" : "backup";
   if (n == 2) tab = "shop";
   dtab = "view";
   draw();
@@ -18,10 +18,11 @@ function openSection(n) {
 function draw() {
   if (mode == "home") drawHome();
   else if (mode == "design") drawDz();
+  else if (mode == "backup") drawBackup();
   else drawMemo();
 }
 
-// Draw the home screen with the two big buttons.
+// Draw the home screen: two big buttons and a small Backup / Restore button.
 function drawHome() {
   byId("shop").value = S.shop;
   byId("nav").innerHTML = "";
@@ -30,7 +31,7 @@ function drawHome() {
     + c
     + ' onclick="openSection(1)"><div style="font-size:72px">🎨</div><div class="pn" style="font-size:26px;margin-top:10px">Designs</div><div class="mu">Show designs to customers</div></div><div '
     + c
-    + ' onclick="openSection(2)"><div style="font-size:72px">🧾</div><div class="pn" style="font-size:26px;margin-top:10px">Memo / Bill</div><div class="mu">Make bills</div></div></div>';
+    + ' onclick="openSection(2)"><div style="font-size:72px">🧾</div><div class="pn" style="font-size:26px;margin-top:10px">Memo / Bill</div><div class="mu">Make bills</div></div><div class="card" style="text-align:center;cursor:pointer;padding:14px" onclick="openSection(3)"><b>💾 Backup / Restore</b><div class="mu">Copy everything to another phone</div></div></div>';
 }
 
 // Switch tab inside Designs (or go back home).
@@ -41,9 +42,5 @@ function designGoTo(t) {
 }
 
 draw();
-
-setTimeout(function() {
-  sync(true);
-}, 1500);
 
 if ("serviceWorker" in navigator && location.protocol.indexOf("http") == 0) navigator.serviceWorker.register("sw.js");

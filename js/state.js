@@ -50,12 +50,13 @@ var dfs = 0;         // selected segment id in Designs
 var dfc = 0;         // selected category id in Designs
 var dfb = 0;         // selected sub-category id in Designs
 var dq = "";         // search text in Designs
+var hq = "";         // search text in the bill History
 var dnp = [];        // photos chosen for the design being added
 
 
 var LG = new Image();
 
-LG.src = LOGO_DATA;
+LG.src = "images/logo.png";
 
 document.getElementById("hl").src = LG.src;
 
@@ -71,19 +72,17 @@ if (S.shop == "Handloom Store") S.shop = "Raja Handloom";
   if (S[k] == null) S[k] = "";
 });
 
-if (!S.dev) S.dev = { name: "", pre: "", main: false };
-
-if (!S.dels) S.dels = [];
-
-if (S.last == null) S.last = "";
-
-if (!S.psig) S.psig = {};
+// Settings added in later versions (older saved data may not have them)
+if (!S.dev) S.dev = { name: "", pre: "" };
 
 if (!S.dsg) S.dsg = [];
 
 if (!S.dzn) S.dzn = [];
 
-if (!S.dsig) S.dsig = {};
+// Old versions had phone-to-phone sync; remove its leftovers
+["dels", "last", "psig", "dsig", "cloud"].forEach(function(k) {
+  delete S[k];
+});
 
 // Save all data in this browser.
 function save() {

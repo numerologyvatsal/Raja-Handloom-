@@ -1,10 +1,11 @@
 // Service worker: keeps the app files so it opens without internet.
-var CACHE = "rh-v2";
+var CACHE = "rh-v4";
 var FILES = [
   "./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-180.png",
   "css/style.css",
-  "js/logo.js", "js/state.js", "js/ui.js", "js/shop.js", "js/bill.js",
-  "js/pdf.js", "js/designs.js", "js/sync.js", "js/app.js"
+  "images/logo.png",
+  "js/state.js", "js/ui.js", "js/shop.js", "js/bill.js",
+  "js/pdf.js", "js/designs.js", "js/report.js", "js/backup.js", "js/app.js"
 ];
 
 self.addEventListener("install", function(e) {

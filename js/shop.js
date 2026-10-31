@@ -18,7 +18,7 @@ function drawMemo() {
   var cc = S.cart.reduce(function(s, i) {
     return s + i.qty;
   }, 0);
-  byId("nav").innerHTML = [["home", "🏠"], ["shop", "Shop"], ["cart", "Cart (" + cc + ")"], ["hist", "History"], ["manage", "Manage"]].map(function(t) {
+  byId("nav").innerHTML = [["home", "🏠"], ["shop", "Shop"], ["cart", "Cart (" + cc + ")"], ["hist", "History"], ["report", "Report"], ["manage", "Manage"]].map(function(t) {
     return '<button class="'
       + (tab == t[0] ? "on" : "")
       + `" onclick="goTo('`
@@ -28,7 +28,7 @@ function drawMemo() {
       + "</button>";
   }).join("");
   // one function per tab, each returns the HTML of that screen
-  var screens = { shop: shopHtml, cart: cartHtml, hist: historyHtml, manage: manageHtml };
+  var screens = { shop: shopHtml, cart: cartHtml, hist: historyHtml, report: reportHtml, manage: manageHtml };
   byId("app").innerHTML = screens[tab]();
 }
 
@@ -327,10 +327,38 @@ function viewProductPhoto(id2, k) {
     + ');closeModal()">Add to cart</button><button class="btn g" onclick="closeModal()">Close</button></div></div></div>';
 }
 
-// HTML of the History tab.
+// HTML of the History tab: search box, bills made by each phone, and the list of bills.
 function historyHtml() {
   if (!S.hist.length) return '<div class="empty">No bills yet</div>';
-  return billsByPhoneHtml() + S.hist.map(function(b) {
+  return '<input placeholder="Search by customer name, mobile, GST or bill no." value="' + escapeHtml(hq)
+    + '" oninput="hq=this.value;refreshHistoryList()" style="margin-bottom:10px">'
+    + billsByPhoneHtml()
+    + '<div id="hlist">' + historyListHtml() + "</div>";
+}
+
+// The bills that match the search text (all bills when the search box is empty).
+function matchingBills() {
+  var words = hq.toLowerCase().split(" ").filter(Boolean);
+  return S.hist.filter(function(b) {
+    var text = [b.cust, b.ph, b.gst, billNumber(b), b.date, b.dev].join(" ").toLowerCase();
+    return words.every(function(w) {
+      return text.indexOf(w) > -1;
+    });
+  });
+}
+
+// HTML of the bill cards after searching.
+function historyListHtml() {
+  var list = matchingBills();
+  if (!list.length) return '<div class="empty">No bill found</div>';
+  var found = "";
+  if (hq.trim()) {
+    var sum = list.reduce(function(t, b) {
+      return t + b.total;
+    }, 0);
+    found = '<div class="mu" style="margin-bottom:8px">' + list.length + " bills found · total " + money(sum) + "</div>";
+  }
+  return found + list.map(function(b) {
     return '<div class="card" style="margin-bottom:8px"><div class="row" style="margin:0"><div><b>Bill #'
       + escapeHtml(billNumber(b))
       + "</b> "
@@ -351,10 +379,15 @@ function historyHtml() {
   }).join("");
 }
 
+// Redraw only the bill cards (used while typing in the search box).
+function refreshHistoryList() {
+  var e = byId("hlist");
+  if (e) e.innerHTML = historyListHtml();
+}
+
 // Delete a bill from history (after confirming).
 function deleteBill(i) {
   confirmDelete("Are you sure you want to delete this bill?", function() {
-    if (S.dev.main) S.dels.push(i);
     S.hist = S.hist.filter(function(x) {
       return x.id != i;
     });
@@ -376,14 +409,7 @@ function manageHtml() {
     + escapeHtml(S.dev.name)
     + '" onchange="S.dev.name=this.value;save()"><input placeholder="Bill prefix (e.g. M)" value="'
     + escapeHtml(S.dev.pre)
-    + '" onchange="S.dev.pre=this.value.toUpperCase();save()" style="max-width:130px"></div><label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" style="width:auto" '
-    + (S.dev.main ? "checked" : "")
-    + ' onchange="S.dev.main=this.checked;save();draw()"> This is the MAIN phone</label><div class="mu">'
-    + (S.dev.main ? "Main phone: sends products, photos and shop details to the other phones, and receives all their bills." : "Other phone: receives products, photos and shop details from the main phone, and sends its bills to it. Change products only on the main phone.")
-    + '</div><div class="mu" style="margin-top:4px">Last sync: '
-    + escapeHtml(S.last || "never")
-    + "</div></div>"
-    + cloudCard()
+    + '" onchange="S.dev.pre=this.value.toUpperCase();save()" style="max-width:130px"></div><div class="mu">The name and prefix are printed on the bills made here (for example M-12), so you can tell which phone made a bill.</div></div>'
     + '<div class="card" style="margin-top:10px"><h3 style="margin-top:0">Shop details (printed on bill)</h3><input placeholder="Address" value="'
     + escapeHtml(S.addr)
     + '" onchange="S.addr=this.value;save()" style="margin-bottom:8px"><div class="row"><input placeholder="Mobile no." type="tel" value="'

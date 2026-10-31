@@ -112,7 +112,7 @@ function buildBillPdf(i) {
     x.fillStyle = "#ccc";
     x.fillRect(P, py, W - 2 * P, 1);
   }
-  var lg = LG.complete && LG.naturalWidth > 0, hx = lg ? 457 : W / 2, mw = lg ? 560 : 714;
+  var lg = LG.complete && LG.naturalWidth > 0 && logoCanBeDrawn(), hx = lg ? 457 : W / 2, mw = lg ? 560 : 714;
   if (lg) {
     var lh = 84, lw = lh * LG.naturalWidth / LG.naturalHeight;
     x.drawImage(LG, P, 22, lw, lh);
@@ -189,4 +189,18 @@ function shareBillPdf(i) {
       if (!e || e.name != "AbortError") saveFile(r.blob, r.name);
     });
   } else saveFile(r.blob, r.name);
+}
+
+// Can the logo be drawn on a canvas? (browsers block this when index.html is opened straight from a file)
+function logoCanBeDrawn() {
+  try {
+    var c = document.createElement("canvas");
+    c.width = c.height = 1;
+    var g = c.getContext("2d");
+    g.drawImage(LG, 0, 0, 1, 1);
+    g.getImageData(0, 0, 1, 1);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }

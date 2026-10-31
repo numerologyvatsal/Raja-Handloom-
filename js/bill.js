@@ -12,7 +12,6 @@ function generateBill() {
   save();
   draw();
   showBill(b.id);
-  sync(true);
 }
 
 // The bill as plain text (for copying).
