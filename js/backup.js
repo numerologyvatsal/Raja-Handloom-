@@ -177,6 +177,7 @@ function applyBackup() {
   if (ticked("products")) {
     S.cats = parts.products.cats || [];
     S.prods = parts.products.prods || [];
+    syncDesigns();
     S.cart = [];
     fc = 0; fs = 0;
     done.push("Products");

@@ -162,6 +162,10 @@ function deleteDesignNode() {
   var N = selectedDesignNode();
   if (!N.cur) return;
   confirmDelete("Are you sure you want to delete " + N.cur.name + "? Designs inside it will also be deleted.", function() {
+    // designs that come from products: stop showing those products in Designs
+    unlinkProducts(S.dzn.filter(function(d) {
+      return N.sb ? d.sub == N.sb.id : N.ct ? d.cat == N.ct.id : d.seg == N.sg.id;
+    }));
     if (N.sb) {
       N.ct.subs = N.ct.subs.filter(function(x) {
         return x.id != N.sb.id;
@@ -317,6 +321,7 @@ function editDesign(id2) {
     return x.id == id2;
   });
   if (!d) return;
+  if (d.pid) return editLinkedDesign(d);
   var im = d.imgs || [];
   byId("md").innerHTML = '<div class="modal" onclick="if(event.target==this){saveDesignFields('
     + id2
@@ -376,4 +381,14 @@ function deleteDesign(id2) {
     save();
     draw();
   });
+}
+
+// Pop-up for a design that comes from a product: only the note can be changed here.
+function editLinkedDesign(d) {
+  byId("md").innerHTML = '<div class="modal" onclick="if(event.target==this){saveDesignFields(' + d.id + ');closeModal();draw()}"><div class="sheet">'
+    + '<h3 style="margin-top:0">Edit design</h3><div><b>' + escapeHtml(d.name) + '</b></div>'
+    + '<div class="mu" style="margin:6px 0 10px">This design comes from a product. Change its name, category and photos in Memo / Bill, Manage.</div>'
+    + '<input id="dno" value="' + escapeHtml(d.note || "") + '" placeholder="Note" style="margin-bottom:10px">'
+    + '<div class="row"><button class="btn" onclick="saveDesignFields(' + d.id + ');closeModal();draw()">Save</button>'
+    + '<button class="btn r" onclick="stopShowingInDesigns(' + d.id + ')">Remove from Designs</button></div></div></div>';
 }

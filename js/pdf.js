@@ -2,7 +2,7 @@
 // (Part of Raja Handloom memo app - plain JavaScript, no build step)
 
 // Build a PDF file from page images (JPEG), one image per page.
-function makePdfFile(jp, w, h) {
+function makePdfFile(jp, w, h, pw, ph) {
   var enc = new TextEncoder(), parts = [], len = 0, offs = [], np2 = jp.length, kids = [];
   function put(a) {
     if (typeof a == "string") a = enc.encode(a);
@@ -18,8 +18,8 @@ function makePdfFile(jp, w, h) {
   obj(1, "<</Type/Catalog/Pages 2 0 R>>");
   obj(2, "<</Type/Pages/Kids[" + kids.join(" ") + "]/Count " + np2 + ">>");
   jp.forEach(function(j, i2) {
-    var p = 3 + i2 * 3, c = p + 1, im = p + 2, cs2 = "q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";
-    obj(p, "<</Type/Page/Parent 2 0 R/MediaBox[0 0 595.28 841.89]/Resources<</XObject<</Im0 "
+    var p = 3 + i2 * 3, c = p + 1, im = p + 2, cs2 = "q " + pw + " 0 0 " + ph + " 0 0 cm /Im0 Do Q";
+    obj(p, "<</Type/Page/Parent 2 0 R/MediaBox[0 0 " + pw + " " + ph + "]/Resources<</XObject<</Im0 "
       + im
       + " 0 R>>>>/Contents "
       + c
@@ -78,7 +78,10 @@ function buildBillPdf(i) {
     return x2.id == i;
   });
   if (!b) return;
-  var W = 794, PH = 1123, sc = 3, P = 40, RH = 34, pos = [], y = 294;
+  var half = S.paper == "a5";   // half of A4 (A5) or the full A4 page
+  var W = half ? 559 : 794, PH = half ? 794 : 1123, sc = 3, P = 40, RH = 34, pos = [], y = 294;
+  var colQty = half ? 309 : 470, colRate = half ? 409 : 580;   // right edge of the Qty and Rate columns
+  var pageW = half ? 419.53 : 595.28, pageH = half ? 595.28 : 841.89;   // page size in PDF points
   var fmt = function(v) {
     return (Math.round(v * 100) / 100).toLocaleString("en-IN");
   };
@@ -112,11 +115,10 @@ function buildBillPdf(i) {
     x.fillStyle = "#ccc";
     x.fillRect(P, py, W - 2 * P, 1);
   }
-  var lg = LG.complete && LG.naturalWidth > 0 && logoCanBeDrawn(), hx = lg ? 457 : W / 2, mw = lg ? 560 : 714;
-  if (lg) {
-    var lh = 84, lw = lh * LG.naturalWidth / LG.naturalHeight;
-    x.drawImage(LG, P, 22, lw, lh);
-  }
+  var lg = LG.complete && LG.naturalWidth > 0 && logoCanBeDrawn();
+  var lh = 84, lw = lg ? lh * LG.naturalWidth / LG.naturalHeight : 0;
+  var textLeft = lg ? P + lw + 16 : P, hx = (textLeft + W - P) / 2, mw = W - P - textLeft;
+  if (lg) x.drawImage(LG, P, 22, lw, lh);
   T(S.shop, hx, 62, 34, "bold", "center", mw);
   if (S.addr) T(S.addr, hx, 88, 14, "", "center", mw);
   var ct = [];
@@ -133,26 +135,31 @@ function buildBillPdf(i) {
   L(252);
   T("#", P, 282, 15, "bold");
   T("Item", P + 30, 282, 15, "bold");
-  T("Qty", 470, 282, 15, "bold", "right");
-  T("Rate", 580, 282, 15, "bold", "right");
+  T("Qty", colQty, 282, 15, "bold", "right");
+  T("Rate", colRate, 282, 15, "bold", "right");
   T("Amount", W - P, 282, 15, "bold", "right");
   L(290);
   b.items.forEach(function(it, k) {
     var r = pos[k], by = r + 22;
     T(String(k + 1), P, by, 15);
-    var nm = it.name;
-    x.font = "15px " + F;
-    while (nm.length > 1 && x.measureText(nm).width > 340) nm = nm.slice(0, -1);
+    // long names: make the letters a little smaller first, then cut the end
+    var nm = it.name, nameW = colQty - P - 30 - 60, nameSize = 15;
+    x.font = nameSize + "px " + F;
+    while (nameSize > 11 && x.measureText(nm).width > nameW) {
+      nameSize--;
+      x.font = nameSize + "px " + F;
+    }
+    while (nm.length > 1 && x.measureText(nm).width > nameW) nm = nm.slice(0, -1);
     if (nm != it.name) nm += "…";
-    T(nm, P + 30, by, 15);
-    T(String(it.qty), 470, by, 15, "", "right");
-    T(fmt(it.price), 580, by, 15, "", "right");
+    T(nm, P + 30, by, nameSize);
+    T(String(it.qty), colQty, by, 15, "", "right");
+    T(fmt(it.price), colRate, by, 15, "", "right");
     T(fmt(it.price * it.qty), W - P, by, 15, "", "right");
     L(r + RH - 4);
   });
   var ty = y + 10;
   L(ty);
-  T("Total", 470, ty + 45, 22, "bold", "right");
+  T("Total", colQty, ty + 45, 22, "bold", "right");
   T("₹ " + fmt(b.total), W - P, ty + 45, 26, "bold", "right");
   T("Thank you! Visit again.", W / 2, ty + 100, 16, "", "center");
   var jp = [];
@@ -165,7 +172,7 @@ function buildBillPdf(i) {
     for (var q2 = 0; q2 < bin.length; q2++) a[q2] = bin.charCodeAt(q2);
     jp.push(a);
   }
-  return { blob: makePdfFile(jp, W * sc, PH * sc), name: "Bill-" + billNumber(b) + ".pdf" };
+  return { blob: makePdfFile(jp, W * sc, PH * sc, pageW, pageH), name: "Bill-" + billNumber(b) + ".pdf" };
 }
 
 // Download the bill as a PDF.

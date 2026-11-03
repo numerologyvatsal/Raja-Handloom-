@@ -74,6 +74,7 @@ function saveRename() {
   var n = byId("en").value.trim();
   if (!n) return;
   renameTarget.name = n;
+  syncDesigns();
   closeModal();
   save();
   draw();

@@ -75,6 +75,8 @@ if (S.shop == "Handloom Store") S.shop = "Raja Handloom";
 // Settings added in later versions (older saved data may not have them)
 if (!S.dev) S.dev = { name: "", pre: "" };
 
+if (!S.paper) S.paper = "a4";
+
 if (!S.dsg) S.dsg = [];
 
 if (!S.dzn) S.dzn = [];
@@ -106,8 +108,12 @@ function escapeHtml(s) {
 }
 
 // Create a new unique id number.
+var lastId = 0;
 function newId() {
-  return Date.now() + Math.floor(Math.random() * 1000);
+  var n = Date.now() + Math.floor(Math.random() * 1000);
+  if (n <= lastId) n = lastId + 1;   // never give the same number twice
+  lastId = n;
+  return n;
 }
 
 // Format a number as rupees.

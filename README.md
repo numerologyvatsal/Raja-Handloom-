@@ -2,13 +2,19 @@
 
 Single-page billing app: categories and sub-categories, products with design photos,
 a Designs section (segment > category > sub-category), cart with editable price and quantity,
-bill history with search, daily / monthly sales report, customer GST, PDF bills with logo, and backup / restore between phones.
+bill history with search, daily / monthly sales report, customer GST, PDF bills with logo (full A4 or half of A4, chosen when you open the bill), and backup / restore between phones.
 No build step and no database needed. Everything is saved in each phone's browser.
 
 ## Put it online (GitHub Pages)
 1. Upload all files in this folder to a GitHub repository.
 2. Repo Settings -> Pages -> Deploy from branch `main`, folder `/ (root)`.
 3. Open the Pages link in Chrome on each phone. Use "Add to Home screen" to install it with the logo icon.
+
+## If "could not open app" appears after installing
+1. Upload the newest files, wait 1-2 minutes, then uninstall the app from the phone.
+2. In Chrome open the site, tap the lock / "i" icon -> Site settings -> Clear data. Update Chrome if it is old.
+3. Open the link again, tap Reload, then Install app (or Add to Home screen) with internet on.
+4. Workaround: Chrome menu -> Add to Home screen -> choose the shortcut option instead of Install.
 
 ## Using more than one phone (Backup / Restore)
 1. On the main phone add your designs, products and photos.
@@ -38,6 +44,7 @@ js/shop.js        Memo / Bill: shop, cart, history, manage screens
 js/bill.js        creating a bill, bill number, bill text
 js/pdf.js         PDF bill: drawing, PDF file, save and share
 js/designs.js     Designs section: segments, categories, sub-categories, photos
+js/link.js        links products with Designs ("Show in Designs" tick)
 js/report.js      Report tab: daily and monthly sale, items sold
 js/backup.js      Backup / Restore screen and functions
 js/app.js         home screen, screen switching, app start

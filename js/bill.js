@@ -34,7 +34,10 @@ function showBill(i) {
   if (!b) return;
   byId("md").innerHTML = '<div class="modal" onclick="if(event.target==this)closeModal()"><div class="sheet"><pre>'
     + escapeHtml(billToText(b))
-    + '</pre><div class="row"><button class="btn" onclick="shareBillPdf('
+    + '</pre><div class="row" style="align-items:center"><span class="mu" style="flex:0 0 auto">PDF paper:</span>'
+    + '<select onchange="S.paper=this.value;save()"><option value="a4"' + (S.paper != "a5" ? " selected" : "") + '>Full A4</option>'
+    + '<option value="a5"' + (S.paper == "a5" ? " selected" : "") + '>Half of A4 (A5)</option></select></div>'
+    + '<div class="row"><button class="btn" onclick="shareBillPdf('
     + i
     + ')">Share PDF</button><button class="btn g" onclick="downloadBillPdf('
     + i

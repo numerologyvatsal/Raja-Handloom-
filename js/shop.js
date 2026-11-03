@@ -282,6 +282,7 @@ function addProductPhoto(id2) {
       return x.id == id2;
     });
     (p.imgs = p.imgs || []).push(u);
+    syncDesigns();
     save();
     openProductPhotos(id2);
   });
@@ -293,6 +294,7 @@ function deleteProductPhoto(id2, k) {
     return x.id == id2;
   });
   p.imgs.splice(k, 1);
+  syncDesigns();
   save();
   openProductPhotos(id2);
 }
@@ -422,7 +424,7 @@ function manageHtml() {
     + '</select><input id="ns" placeholder="Sub-category name"></div><button class="btn w" onclick="addSubCategory()">Add sub-category</button></div>';
   h += '<div class="card" style="margin-top:10px"><h3 style="margin-top:0">Add product</h3><input id="pnm" placeholder="Product name" style="margin-bottom:8px"><button class="btn g w" style="margin-bottom:8px" onclick="pickNewProductPhoto()">📷 Add design photos (<span id="npc">'
     + np.length
-    + '</span>)</button><div class="row"><select id="pc" onchange="fillSubCategorySelect()">'
+    + '</span>)</button><label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="pdz" checked style="width:auto"> Also show in Designs</label><div class="row"><select id="pc" onchange="fillSubCategorySelect()">'
     + categoryOptionsHtml()
     + '</select><select id="psb"></select></div><div class="row"><input id="ppr" type="number" inputmode="decimal" placeholder="Price"><button class="btn" style="flex:0 0 auto" onclick="addProduct()">Add</button></div></div>';
   h += '<div class="card" style="margin-top:10px"><h3 style="margin-top:0">Categories</h3>'
@@ -455,7 +457,11 @@ function manageHtml() {
       + escapeHtml(p.name)
       + '</b><div class="mu">'
       + escapeHtml(categoryName(p.cat))
-      + '</div></div><div><input type="number" style="width:84px" value="'
+      + '</div><label class="mu" style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="checkbox" style="width:auto"'
+      + (p.inDesigns ? " checked" : "")
+      + ' onchange="toggleProductDesign('
+      + p.id
+      + ',this.checked)"> Show in Designs</label></div><div><input type="number" style="width:84px" value="'
       + p.price
       + '" onchange="updateProductPrice('
       + p.id
@@ -510,8 +516,9 @@ function addSubCategory() {
 function addProduct() {
   var n = byId("pnm").value.trim(), pr = +byId("ppr").value;
   if (!n || !byId("pc").value) return;
-  S.prods.push({ id: newId(), name: n, price: pr || 0, cat: +byId("pc").value, sub: +byId("psb").value, imgs: np.slice() });
+  S.prods.push({ id: newId(), name: n, price: pr || 0, cat: +byId("pc").value, sub: +byId("psb").value, imgs: np.slice(), inDesigns: byId("pdz").checked });
   np = [];
+  syncDesigns();
   save();
   draw();
 }
@@ -527,6 +534,7 @@ function updateProductPrice(i, v) {
 // Delete a product (after confirming).
 function deleteProduct(i) {
   confirmDelete("Are you sure you want to delete this product?", function() {
+    removeDesignsOf([i]);
     S.prods = S.prods.filter(function(x) {
       return x.id != i;
     });
@@ -538,6 +546,11 @@ function deleteProduct(i) {
 // Delete a category and its products (after confirming).
 function deleteCategory(i) {
   confirmDelete("Are you sure you want to delete this category and all its products?", function() {
+    removeDesignsOf(S.prods.filter(function(x) {
+      return x.cat == i;
+    }).map(function(x) {
+      return x.id;
+    }));
     S.cats = S.cats.filter(function(x) {
       return x.id != i;
     });
@@ -577,6 +590,7 @@ function deleteSubCategory(c, s) {
     S.prods.forEach(function(p) {
       if (p.sub == s) p.sub = 0;
     });
+    syncDesigns();
     save();
     draw();
   });
