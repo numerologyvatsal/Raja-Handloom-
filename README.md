@@ -2,7 +2,7 @@
 
 Single-page billing app: categories and sub-categories, products with design photos,
 a Designs section (segment > category > sub-category), cart with editable price and quantity,
-bill history with search, daily / monthly sales report, customer GST, PDF bills with logo (full A4 or half of A4, chosen when you open the bill), and backup / restore between phones.
+bill history with search, daily / monthly sales report, customer GST, PDF bills with logo (full A4, or the upper half of an A4 page, chosen when you open the bill), and backup / restore between phones.
 No build step and no database needed. Everything is saved in each phone's browser.
 
 ## Put it online (GitHub Pages)

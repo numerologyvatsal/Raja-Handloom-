@@ -78,20 +78,39 @@ function buildBillPdf(i) {
     return x2.id == i;
   });
   if (!b) return;
-  var half = S.paper == "a5";   // half of A4 (A5) or the full A4 page
-  var W = half ? 559 : 794, PH = half ? 794 : 1123, sc = 3, P = 40, RH = 34, pos = [], y = 294;
-  var colQty = half ? 309 : 470, colRate = half ? 409 : 580;   // right edge of the Qty and Rate columns
-  var pageW = half ? 419.53 : 595.28, pageH = half ? 595.28 : 841.89;   // page size in PDF points
+  // The PDF page is always A4. "half" draws a smaller bill in the upper half of the page,
+  // "a4" uses the whole page.
+  var half = S.paper == "half";
+  var W = 794, PH = 1123, sc = 3, P = 40;
+  var U = half ? 561 : PH;                // height of the page that is used
+  var pageW = 595.28, pageH = 841.89;     // A4 size in PDF points
+  var colQty = 470, colRate = 580;        // right edge of the Qty and Rate columns
+  // Sizes and heights of every part of the bill (px)
+  var Ly = half ? {
+    lh: 60, logoY: 12, shopY: 44, shopSize: 26, addrY: 66, addrSize: 13, contactY: 86,
+    titleY: 112, titleSize: 14, rule1: 122, billY: 144, billSize: 16, dateSize: 13,
+    custY: 166, custSize: 16, subY: 186, subSize: 13, rule2: 198,
+    headY: 218, headSize: 13, rule3: 226, rowsY: 230, rowH: 26, rowSize: 13, rowBase: 18, sepOff: 3,
+    footH: 70, footRule: 6, totalY: 30, totalSize: 18, amtSize: 22, thanksY: 58, thanksSize: 13
+  } : {
+    lh: 84, logoY: 22, shopY: 62, shopSize: 34, addrY: 88, addrSize: 14, contactY: 110,
+    titleY: 138, titleSize: 16, rule1: 150, billY: 180, billSize: 18, dateSize: 15,
+    custY: 210, custSize: 18, subY: 236, subSize: 15, rule2: 252,
+    headY: 282, headSize: 15, rule3: 290, rowsY: 294, rowH: 34, rowSize: 15, rowBase: 22, sepOff: 4,
+    footH: 130, footRule: 10, totalY: 45, totalSize: 22, amtSize: 26, thanksY: 100, thanksSize: 16
+  };
+  var RH = Ly.rowH, pos = [], y = Ly.rowsY;
   var fmt = function(v) {
     return (Math.round(v * 100) / 100).toLocaleString("en-IN");
   };
+  // Work out where every row goes; a row that does not fit moves to the next page
   b.items.forEach(function() {
-    if (y % PH + RH > PH - 60) y = (Math.floor(y / PH) + 1) * PH + 40;
+    if (y % PH + RH > U - 60) y = (Math.floor(y / PH) + 1) * PH + 40;
     pos.push(y);
     y += RH;
   });
-  if (y % PH + 130 > PH - 30) y = (Math.floor(y / PH) + 1) * PH + 40;
-  var n = Math.ceil((y + 130) / PH), c = document.createElement("canvas");
+  if (y % PH + Ly.footH > U - 30) y = (Math.floor(y / PH) + 1) * PH + 40;
+  var n = Math.ceil((y + Ly.footH) / PH), c = document.createElement("canvas");
   c.width = W * sc;
   c.height = n * PH * sc;
   var x = c.getContext("2d");
@@ -99,6 +118,7 @@ function buildBillPdf(i) {
   x.fillStyle = "#fff";
   x.fillRect(0, 0, W, n * PH);
   var F = "'Noto Sans Gujarati','Shruti',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+  // Write text. mw2 (optional) = maximum width, the letters shrink to fit.
   function T(s, px, py, sz, w, al, mw2) {
     x.fillStyle = "#111";
     x.font = (w || "") + " " + sz + "px " + F;
@@ -111,57 +131,64 @@ function buildBillPdf(i) {
     x.textAlign = al || "left";
     x.fillText(s, px, py);
   }
+  // Draw a thin grey line
   function L(py) {
     x.fillStyle = "#ccc";
     x.fillRect(P, py, W - 2 * P, 1);
   }
+  // Top: logo on the left, shop name and details next to it
   var lg = LG.complete && LG.naturalWidth > 0 && logoCanBeDrawn();
-  var lh = 84, lw = lg ? lh * LG.naturalWidth / LG.naturalHeight : 0;
+  var lw = lg ? Ly.lh * LG.naturalWidth / LG.naturalHeight : 0;
   var textLeft = lg ? P + lw + 16 : P, hx = (textLeft + W - P) / 2, mw = W - P - textLeft;
-  if (lg) x.drawImage(LG, P, 22, lw, lh);
-  T(S.shop, hx, 62, 34, "bold", "center", mw);
-  if (S.addr) T(S.addr, hx, 88, 14, "", "center", mw);
+  if (lg) x.drawImage(LG, P, Ly.logoY, lw, Ly.lh);
+  T(S.shop, hx, Ly.shopY, Ly.shopSize, "bold", "center", mw);
+  if (S.addr) T(S.addr, hx, Ly.addrY, Ly.addrSize, "", "center", mw);
   var ct = [];
   if (S.sph) ct.push("Mobile: " + S.sph);
   if (S.sgst) ct.push("GSTIN: " + S.sgst);
-  if (ct.length) T(ct.join("    |    "), hx, 110, 14, "", "center", mw);
-  T("Bill / Memo", W / 2, 138, 16, "bold", "center");
-  L(150);
-  T("Bill No: " + billNumber(b), P, 180, 18, "bold");
-  T(b.date, W - P, 180, 15, "", "right");
-  T("Customer: " + (b.cust || "-"), P, 210, 18);
-  if (b.ph) T("Mobile: " + b.ph, P, 236, 15);
-  if (b.gst) T("GST No: " + b.gst, W - P, 236, 15, "", "right");
-  L(252);
-  T("#", P, 282, 15, "bold");
-  T("Item", P + 30, 282, 15, "bold");
-  T("Qty", colQty, 282, 15, "bold", "right");
-  T("Rate", colRate, 282, 15, "bold", "right");
-  T("Amount", W - P, 282, 15, "bold", "right");
-  L(290);
+  if (ct.length) T(ct.join("    |    "), hx, Ly.contactY, Ly.addrSize, "", "center", mw);
+  T("Bill / Memo", W / 2, Ly.titleY, Ly.titleSize, "bold", "center");
+  L(Ly.rule1);
+  // Bill number, date and customer
+  T("Bill No: " + billNumber(b), P, Ly.billY, Ly.billSize, "bold");
+  T(b.date, W - P, Ly.billY, Ly.dateSize, "", "right");
+  T("Customer: " + (b.cust || "-"), P, Ly.custY, Ly.custSize);
+  if (b.ph) T("Mobile: " + b.ph, P, Ly.subY, Ly.subSize);
+  if (b.gst) T("GST No: " + b.gst, W - P, Ly.subY, Ly.subSize, "", "right");
+  L(Ly.rule2);
+  // Table heading
+  T("#", P, Ly.headY, Ly.headSize, "bold");
+  T("Item", P + 30, Ly.headY, Ly.headSize, "bold");
+  T("Qty", colQty, Ly.headY, Ly.headSize, "bold", "right");
+  T("Rate", colRate, Ly.headY, Ly.headSize, "bold", "right");
+  T("Amount", W - P, Ly.headY, Ly.headSize, "bold", "right");
+  L(Ly.rule3);
+  // One row for each item
   b.items.forEach(function(it, k) {
-    var r = pos[k], by = r + 22;
-    T(String(k + 1), P, by, 15);
+    var r = pos[k], by = r + Ly.rowBase;
+    T(String(k + 1), P, by, Ly.rowSize);
     // long names: make the letters a little smaller first, then cut the end
-    var nm = it.name, nameW = colQty - P - 30 - 60, nameSize = 15;
+    var nm = it.name, nameW = colQty - P - 30 - 60, nameSize = Ly.rowSize;
     x.font = nameSize + "px " + F;
-    while (nameSize > 11 && x.measureText(nm).width > nameW) {
+    while (nameSize > 10 && x.measureText(nm).width > nameW) {
       nameSize--;
       x.font = nameSize + "px " + F;
     }
     while (nm.length > 1 && x.measureText(nm).width > nameW) nm = nm.slice(0, -1);
     if (nm != it.name) nm += "…";
     T(nm, P + 30, by, nameSize);
-    T(String(it.qty), colQty, by, 15, "", "right");
-    T(fmt(it.price), colRate, by, 15, "", "right");
-    T(fmt(it.price * it.qty), W - P, by, 15, "", "right");
-    L(r + RH - 4);
+    T(String(it.qty), colQty, by, Ly.rowSize, "", "right");
+    T(fmt(it.price), colRate, by, Ly.rowSize, "", "right");
+    T(fmt(it.price * it.qty), W - P, by, Ly.rowSize, "", "right");
+    L(r + RH - Ly.sepOff);
   });
-  var ty = y + 10;
+  // Bottom: total and thank-you line
+  var ty = y + Ly.footRule;
   L(ty);
-  T("Total", colQty, ty + 45, 22, "bold", "right");
-  T("₹ " + fmt(b.total), W - P, ty + 45, 26, "bold", "right");
-  T("Thank you! Visit again.", W / 2, ty + 100, 16, "", "center");
+  T("Total", colQty, ty + Ly.totalY, Ly.totalSize, "bold", "right");
+  T("₹ " + fmt(b.total), W - P, ty + Ly.totalY, Ly.amtSize, "bold", "right");
+  T("Thank you! Visit again.", W / 2, ty + Ly.thanksY, Ly.thanksSize, "", "center");
+  // Cut the big picture into pages and turn each page into a JPEG
   var jp = [];
   for (var p = 0; p < n; p++) {
     var t = document.createElement("canvas");

@@ -75,6 +75,8 @@ if (S.shop == "Handloom Store") S.shop = "Raja Handloom";
 // Settings added in later versions (older saved data may not have them)
 if (!S.dev) S.dev = { name: "", pre: "" };
 
+if (S.paper == "a5") S.paper = "half";
+
 if (!S.paper) S.paper = "a4";
 
 if (!S.dsg) S.dsg = [];
